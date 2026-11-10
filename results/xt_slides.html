@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Does past xT predict next-match npxG?</title>
+<style>
+  @page { size: 13.333in 7.5in; margin: 0; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: #FBFBF8; }
+  body {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    color: #3F4A58;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .slide {
+    width: 1280px; height: 720px;
+    padding: 48px 80px 80px;
+    background: #FBFBF8;
+    position: relative;
+    overflow: hidden;
+    page-break-after: always;
+    display: flex; flex-direction: column;
+  }
+  .slide:last-child { page-break-after: auto; }
+
+  .eyebrow {
+    font-size: 15px; font-weight: 600; letter-spacing: 0.14em;
+    text-transform: uppercase; color: #4E79A7; margin-bottom: 12px;
+  }
+  h1 {
+    font-size: 40px; font-weight: 600; line-height: 1.1;
+    color: #1F2A37; letter-spacing: -0.015em;
+  }
+  .sub {
+    font-size: 18px; line-height: 1.45; color: #6B7684;
+    margin-top: 10px; max-width: 1000px;
+  }
+  .rule { height: 3px; width: 64px; background: #4E79A7; margin-top: 20px; }
+
+  /* ---- methods grid ---- */
+  .grid {
+    margin-top: 28px; flex: 1;
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: 1fr 1fr; gap: 20px 24px;
+  }
+  .card {
+    background: #FFFFFF; border: 1px solid #E4E6E1; border-radius: 12px;
+    padding: 20px 22px; display: flex; flex-direction: column;
+  }
+  .card .num {
+    font-size: 13px; font-weight: 700; letter-spacing: 0.1em;
+    color: #A8B0BA; margin-bottom: 7px;
+  }
+  .card h3 {
+    font-size: 19px; font-weight: 600; color: #1F2A37; margin-bottom: 8px;
+  }
+  .card p { font-size: 15.5px; line-height: 1.45; color: #5A6573; }
+  .card b { color: #1F2A37; font-weight: 600; }
+
+  /* ---- results ---- */
+  .results { margin-top: 20px; flex: 1; display: flex; gap: 32px; }
+  .figwrap { width: 672px; }
+  .figwrap img { width: 672px; height: 448px; object-fit: contain; display: block; }
+  .caption { font-size: 14px; line-height: 1.4; color: #8A939E; margin-top: 8px; }
+  .findings { flex: 1; display: flex; flex-direction: column; gap: 20px; padding-top: 2px; }
+  .finding { border-left: 3px solid #4E79A7; padding-left: 15px; }
+  .finding.alt { border-left-color: #E15759; }
+  .finding h3 { font-size: 18px; font-weight: 600; color: #1F2A37; line-height: 1.3; margin-bottom: 5px; }
+  .finding p { font-size: 15.5px; line-height: 1.45; color: #5A6573; }
+  .finding .stat { font-weight: 600; color: #1F2A37; font-variant-numeric: tabular-nums; }
+
+  /* ---- conclusions (dark) ---- */
+  .dark { background: #1B2838; }
+  .dark .eyebrow { color: #8FB4D6; }
+  .dark h1 { color: #F4F6F5; }
+  .dark .rule { background: #8FB4D6; }
+  .points {
+    margin-top: 30px; flex: 1; display: flex; flex-direction: column;
+    gap: 18px; justify-content: space-between; padding-bottom: 6px;
+  }
+  .point { display: flex; gap: 18px; align-items: flex-start; }
+  .point .dot {
+    width: 9px; height: 9px; border-radius: 50%; background: #8FB4D6;
+    margin-top: 9px; flex: 0 0 9px;
+  }
+  .point .dot.coral { background: #E8898B; }
+  .point p { font-size: 19px; line-height: 1.45; color: #C8D2DC; }
+  .point p b { color: #FFFFFF; font-weight: 600; }
+  .caveat {
+    margin-top: 22px; padding-top: 16px; border-top: 1px solid #33455A;
+    font-size: 15px; line-height: 1.45; color: #8795A4;
+  }
+
+  .foot {
+    position: absolute; left: 80px; right: 80px; bottom: 30px;
+    display: flex; justify-content: space-between;
+    font-size: 13.5px; color: #A8B0BA;
+  }
+  .dark .foot { color: #6D7E90; }
+</style>
+</head>
+<body>
+
+<!-- ============ 1. METHODS ============ -->
+<section class="slide">
+  <div class="eyebrow">Methods</div>
+  <h1>Does past xT predict next-match npxG?</h1>
+  <p class="sub">One common test for three action-valuation models: predict a team&rsquo;s non-penalty xG in its <i>next</i> match from what it created, and what its opponent conceded, before it.</p>
+  <div class="rule"></div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="num">01</div>
+      <h3>Data</h3>
+      <p>StatsBomb open data, 2015/16. <b>1,551 matches</b>, 3.0M actions. England, Spain, Italy and France are forecast; Germany is training-only.</p>
+    </div>
+    <div class="card">
+      <div class="num">02</div>
+      <h3>Three valuations</h3>
+      <p><b>Karun</b> grid xT, <b>Soccermatics</b> xT and <b>VAEP</b> &mdash; all scored on the same actions, passes and crosses only, so none gets credit the others cannot.</p>
+    </div>
+    <div class="card">
+      <div class="num">03</div>
+      <h3>Leave one league out</h3>
+      <p>Each method is fitted on the other leagues, then values the league held out. <b>No model ever sees the league it rates.</b></p>
+    </div>
+    <div class="card">
+      <div class="num">04</div>
+      <h3>Features</h3>
+      <p>Own value created plus the opponent&rsquo;s value conceded, each averaged over the <b>previous n matches</b>, n&nbsp;=&nbsp;1 to 30. Never its own match.</p>
+    </div>
+    <div class="card">
+      <div class="num">05</div>
+      <h3>Forecast</h3>
+      <p>Walk-forward least squares per league, refitted on <b>every match played before that date</b> and nothing after it. Target: next-match npxG.</p>
+    </div>
+    <div class="card">
+      <div class="num">06</div>
+      <h3>Scoring</h3>
+      <p>Root mean squared error, the loss the fit itself minimises. Tested by <b>team-block bootstrap</b> and Diebold&ndash;Mariano, clustered on 80 teams.</p>
+    </div>
+  </div>
+
+  <div class="foot"><span>xT model comparison &middot; StatsBomb open data 2015/16</span><span>1</span></div>
+</section>
+
+<!-- ============ 2. RESULTS ============ -->
+<section class="slide">
+  <div class="eyebrow">Results</div>
+  <h1>Past npxG is the baseline to beat</h1>
+
+  <div class="results">
+    <div class="figwrap">
+      <img src="fig.png" alt="Forecast RMSE for next-match npxG against the number of past matches averaged, for three xT methods alone and combined with past npxG, with past npxG alone as the comparator.">
+      <p class="caption">378 team-matches, one common scored set. Colour = xT method; solid = xT pair, dotted = all four terms, heavy blue dashes = npxG only, no xT.</p>
+    </div>
+
+    <div class="findings">
+      <div class="finding">
+        <h3>npxG alone is hard to beat</h3>
+        <p>Its best error is <span class="stat">RMSE 0.675</span> at n&nbsp;=&nbsp;27, the lowest of any model at any window.</p>
+      </div>
+      <div class="finding">
+        <h3>npxG always helps an xT model</h3>
+        <p>Adding it to any of the three moves RMSE by <span class="stat">&minus;0.017 to &minus;0.027</span>, significant at every window.</p>
+      </div>
+      <div class="finding alt">
+        <h3>xT helps only on short histories</h3>
+        <p>Soccermatics&nbsp;+&nbsp;npxG beats npxG alone at <span class="stat">n&nbsp;=&nbsp;5 (p&nbsp;=&nbsp;0.037)</span> and <span class="stat">n&nbsp;=&nbsp;7 (p&nbsp;=&nbsp;0.011)</span>. By n&nbsp;=&nbsp;10 the gap is gone.</p>
+      </div>
+      <div class="finding">
+        <h3>More matches stop paying</h3>
+        <p>The npxG curve is flat from about <span class="stat">n&nbsp;=&nbsp;24</span>: a longer history buys nothing more.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot"><span>Forecasting next-match npxG</span><span>2</span></div>
+</section>
+
+<!-- ============ 3. RESULTS, GOALS ============ -->
+<section class="slide">
+  <div class="eyebrow">Results &middot; same test, goals as the target</div>
+  <h1>Predict goals instead, and xT comes out ahead</h1>
+
+  <div class="results">
+    <div class="figwrap">
+      <img src="fig_goals.png" alt="Forecast RMSE for next-match goals against the number of past matches averaged, for three xT methods alone and combined with past npxG, with past npxG and past goals as comparators, and a no-model yardstick line.">
+      <p class="caption">Target is non-penalty goals &mdash; penalties and own goals excluded, exactly as in npxG. Figure: 378 team-matches on the common scored set. The tests at right use n&nbsp;=&nbsp;7 on its own full set of 2,232 forecasts.</p>
+    </div>
+
+    <div class="findings">
+      <div class="finding">
+        <h3>Goals are far harder to call</h3>
+        <p>The best model reaches <span class="stat">R&sup2; &asymp; 0.09</span>, against 0.12 for npxG. Most of a single match stays unpredictable.</p>
+      </div>
+      <div class="finding alt">
+        <h3>Past goals is the weakest signal</h3>
+        <p>All three xT models beat it: Soccermatics <span class="stat">&minus;0.016 (p&nbsp;=&nbsp;0.019)</span>, Karun <span class="stat">&minus;0.014 (p&nbsp;=&nbsp;0.017)</span>, VAEP <span class="stat">&minus;0.018 (p&nbsp;=&nbsp;0.001)</span>.</p>
+      </div>
+      <div class="finding">
+        <h3>Past npxG does not beat it</h3>
+        <p><span class="stat">&minus;0.008, p&nbsp;=&nbsp;0.124</span>. On one season, xG is no better than the scoreline at forecasting the scoreline.</p>
+      </div>
+      <div class="finding">
+        <h3>Soccermatics + npxG wins again</h3>
+        <p><span class="stat">RMSE 1.140</span> at n&nbsp;=&nbsp;7, ahead of npxG alone <span class="stat">(p&nbsp;=&nbsp;0.044)</span> &mdash; the same model that led on the npxG target.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot"><span>Forecasting next-match goals</span><span>3</span></div>
+</section>
+
+<!-- ============ 4. CONCLUSIONS ============ -->
+<section class="slide dark">
+  <div class="eyebrow">Conclusions &middot; judged on goals</div>
+  <h1>Judged on goals, xT beats the tallies &mdash; xG does not</h1>
+  <div class="rule"></div>
+
+  <div class="points">
+    <div class="point">
+      <div class="dot"></div>
+      <p><b>Goals are the honest target, and a brutal one.</b> From six matches of history only about 7 per cent of a team&rsquo;s next-match goals is predictable: RMSE 1.139 against a no-model floor of 1.181.</p>
+    </div>
+    <div class="point">
+      <div class="dot coral"></div>
+      <p><b>Past goals is the weakest predictor of goals,</b> last of eight. At seven matches all three xT models beat it (p&nbsp;=&nbsp;0.001&ndash;0.019) while past npxG does not (p&nbsp;=&nbsp;0.124).</p>
+    </div>
+    <div class="point">
+      <div class="dot"></div>
+      <p><b>Soccermatics xT + npxG leads.</b> At six matches it alone beats both free yardsticks (p&nbsp;=&nbsp;0.046 on each).</p>
+    </div>
+    <div class="point">
+      <div class="dot"></div>
+      <p><b>The npxG verdict reverses.</b> Forecasting npxG, past npxG wins and xT adds almost nothing; forecasting goals, xT is what separates. The target decides the answer, so it must be fixed in advance.</p>
+    </div>
+    <div class="point">
+      <div class="dot"></div>
+      <p><b>Two things that do not pay.</b> An npxG&nbsp;&times;&nbsp;xT interaction is strongly significant in sample but worse out of sample when training rows are short; best action per sequence helps VAEP alone.</p>
+    </div>
+    <div class="point">
+      <div class="dot"></div>
+      <p><b>Next: lock six matches and both targets in a register, and score it forward.</b></p>
+    </div>
+  </div>
+
+  <p class="caveat">Caveats: one season only; the best model beats the best yardstick by about one and a half per cent of forecast error; and the winners were picked out of a grid of eight models, thirty windows and two targets &mdash; which is exactly why six matches and both targets now get registered in advance.</p>
+
+  <div class="foot"><span>xT model comparison</span><span>4</span></div>
+</section>
+
+</body>
+</html>

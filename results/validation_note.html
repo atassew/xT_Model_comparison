@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>A running test of xT and xG models</title>
+<style>
+  @page { size: A4; margin: 0; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: #FFFFFF; }
+  body {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    color: #39434F;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .page { width: 794px; height: 1123px; padding: 42px 52px 28px; display: flex; flex-direction: column; }
+
+  .eyebrow {
+    font-size: 10.5px; font-weight: 700; letter-spacing: 0.13em; text-transform: uppercase;
+    color: #4E79A7;
+  }
+  h1 {
+    font-size: 24px; font-weight: 600; line-height: 1.12; color: #1A2430;
+    letter-spacing: -0.012em; margin-top: 6px;
+  }
+  .standfirst {
+    font-size: 12px; line-height: 1.48; color: #5A6573; margin-top: 8px;
+    padding-bottom: 11px; border-bottom: 2px solid #1A2430;
+  }
+
+  .body { column-count: 2; column-gap: 26px; margin-top: 11px; flex: 1; }
+  h2 {
+    font-size: 12px; font-weight: 700; color: #1A2430; margin-top: 11px; margin-bottom: 4px;
+    break-after: avoid;
+  }
+  .body > h2:first-child { margin-top: 0; }
+  p { font-size: 11px; line-height: 1.45; margin-bottom: 5px; }
+  ul, ol { margin: 0 0 5px 14px; }
+  li { font-size: 11px; line-height: 1.42; margin-bottom: 3.5px; }
+  b { color: #1A2430; font-weight: 600; }
+
+  .results {
+    column-span: all; break-inside: avoid; margin-top: 9px;
+    background: #F4F6F8; border-top: 3px solid #4E79A7; padding: 9px 13px 10px;
+  }
+  .results h3 { font-size: 11.5px; font-weight: 700; color: #1A2430; margin-bottom: 6px; }
+  .results .cols { display: flex; gap: 20px; }
+  .results .col { flex: 1; }
+  .results h4 { font-size: 10.5px; font-weight: 700; color: #4E79A7; margin-bottom: 3px; }
+  .results p { font-size: 10.5px; line-height: 1.4; margin-bottom: 0; color: #4A5560; }
+  .n { font-variant-numeric: tabular-nums; font-weight: 600; color: #1A2430; }
+
+  .foot {
+    margin-top: 8px; padding-top: 7px; border-top: 1px solid #DFE3E8;
+    display: flex; justify-content: space-between;
+    font-size: 10px; color: #8A939E;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="eyebrow">Method note &middot; xT model comparison</div>
+  <h1>A running test: forecast each matchweek before it is played</h1>
+  <p class="standfirst">A proposal to put the xT and xG models into production against live fixtures. Every model in a published register forecasts each team&rsquo;s npxG and goals <i>before kick-off</i>, from that team&rsquo;s <b>last six matches</b>, and is scored as the results come in. What that buys over a backtest, how to run it, and how long before it tells us anything.</p>
+
+  <div class="body">
+
+    <h2>Why a running test and not another backtest</h2>
+    <p>Action-valuation models have no ground truth. Karun&rsquo;s xT, Soccermatics xT and VAEP each put a number on a pass, but no pass has a true value to check it against, and each model is fitted towards its own proxy &mdash; reaching a shot, scoring within ten actions. Ranking them on that proxy only asks which fits its own definition best.</p>
+    <p>Forecasting a later match fixes the circularity, and a backtest can do it. What a backtest cannot do is <i>prove</i> it did it honestly. Look-ahead is easy to introduce and hard to see. A grid of models, windows and targets will manufacture a winner that nobody named in advance. A forecast time-stamped before kick-off has neither problem: the match has not been played, so there is nothing to leak, and the entry was registered, so there is nothing to select.</p>
+
+    <h2>The test</h2>
+    <p>Before each matchweek, every entry in the register emits, for both teams in every fixture, a forecast of that team&rsquo;s non-penalty xG and of its goals. The inputs are the team&rsquo;s own action value created and its opponent&rsquo;s conceded, each averaged over <b>the previous six matches</b>. The valuer is fitted on earlier seasons and other leagues; the forecasting regression is fitted on every match completed to date. Results arrive, forecasts are scored by RMSE, and the running tally updates.</p>
+
+    <h2>Why six</h2>
+    <p>Six is where the retrospective run points, and a demanding place to be judged. Averaging more matches lowers everyone&rsquo;s error, but it also lets past npxG catch up and overtake: beyond about ten, no xT model separates from it. If an action valuation carries information that a simple tally of chances does not, a short history is where it has to show. Six is also the window a club actually has in hand &mdash; early in a season, or after a run of signings.</p>
+
+    <h2>What goes in the register</h2>
+    <p>Everything on one scale, so the comparison is like for like:</p>
+    <ul>
+      <li>the xT and VAEP models under test, each as attack plus opponent defence;</li>
+      <li>two yardsticks that cost nothing &mdash; the team&rsquo;s own past npxG, and its past goals;</li>
+      <li>the no-skill floor: always predict the league average.</li>
+    </ul>
+    <p>Both targets are registered and neither may be chosen afterwards: in the retrospective run the ordering of the entries <i>reverses</i> between npxG and goals. A valuation that cannot beat the free yardsticks over a season has not earned its machinery.</p>
+
+    <h2>Running it honestly</h2>
+    <ol>
+      <li><b>Lock it before the season.</b> The model specs, the six-match window, both targets, the action set and the code version, hashed and published &mdash; so a later change is visible as a change.</li>
+      <li><b>One forecast per team per match,</b> emitted before kick-off into an append-only log with its timestamp. A forecast that misses the deadline is a miss, not a late entry.</li>
+      <li><b>The valuer refits on a fixed schedule only</b> &mdash; between seasons &mdash; and never on the league it is currently rating.</li>
+      <li><b>The regression refits after each completed matchweek,</b> on everything up to it and nothing after.</li>
+      <li><b>Score on arrival.</b> Running RMSE for every entry, with team-clustered intervals on each difference, never one pooled number without them.</li>
+      <li><b>A model added mid-stream is a new entrant</b> with its own start date, compared only on the overlap.</li>
+      <li><b>Publish the whole register, including entries that stop.</b> A model that quietly disappears should be visible as having disappeared.</li>
+    </ol>
+
+    <h2>How long before it says anything</h2>
+    <p>Set expectations from what the retrospective run needed. The differences between good models are <span class="n">0.01&ndash;0.02</span> of RMSE, and separating them at 95&nbsp;per cent took on the order of <span class="n">2,300</span> scored team-matches &mdash; which is what a six-match window over four big leagues yields in a single season, once every team has played its first six and the regression has its minimum training set. So: one season for effects the size of the ones already seen, and nearer three for the smaller ones. A running test is a multi-season commitment, which is the argument for starting it now rather than after the next analysis.</p>
+
+    <h2>What it still cannot tell us</h2>
+    <p>The ceiling does not move: about a tenth of a single team-match is predictable, so no entry will look impressive in absolute terms and the floor belongs on every chart. The test scores a team-level <i>aggregate</i>, so it ranks ways of summing actions as much as ways of valuing them. And it answers &ldquo;does this measure something that persists?&rdquo; &mdash; not &ldquo;is this the right value for this pass?&rdquo;</p>
+
+    <div class="results">
+      <h3>What the retrospective run shows at six matches &mdash; and the claim the running test registers</h3>
+      <div class="cols">
+        <div class="col">
+          <h4>At n = 6, on 2,314 team-matches</h4>
+          <p>Soccermatics xT + npxG leads both targets: RMSE <span class="n">0.650</span> against next-match npxG (R&sup2; <span class="n">0.102</span>, floor 0.686) and <span class="n">1.139</span> against next-match goals (R&sup2; <span class="n">0.070</span>, floor 1.181). Karun and VAEP sit behind it on both, and past npxG alone is seventh of eight on the goals target.</p>
+        </div>
+        <div class="col">
+          <h4>The claim being registered</h4>
+          <p>At six matches it is the only entry that beats <i>both</i> free yardsticks on <i>both</i> targets. Against past npxG: <span class="n">&minus;0.0090</span> (p&nbsp;=&nbsp;0.040) and <span class="n">&minus;0.0146</span> (p&nbsp;=&nbsp;0.046). Against past goals: <span class="n">&minus;0.0147</span> (p&nbsp;=&nbsp;0.005) and <span class="n">&minus;0.0170</span> (p&nbsp;=&nbsp;0.046). Four signs to confirm or break prospectively.</p>
+        </div>
+        <div class="col">
+          <h4>And two warnings</h4>
+          <p>Six was read off this run, which is precisely why it must now be locked and tested forward. And an npxG&nbsp;&times;&nbsp;xT interaction looks strongly significant in sample (<span class="n">F up to 11</span>) yet does not pay out of sample &mdash; it helps only where the regression has hundreds of rows to fit it. Scored live, week by week, that would have shown as a loss from the start.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="foot">
+    <span>Evidence so far: StatsBomb open data 2015/16 &middot; ENG, ESP, ITA, FRA forecast &middot; GER training only</span>
+    <span>November 2026</span>
+  </div>
+
+</div>
+</body>
+</html>
